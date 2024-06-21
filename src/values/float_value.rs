@@ -203,7 +203,7 @@ impl Display for FloatValue<'_> {
 impl<'ctx> TryFrom<InstructionValue<'ctx>> for FloatValue<'ctx> {
     type Error = ();
 
-    fn try_from(value: InstructionValue) -> Result<Self, Self::Error> {
+    fn try_from(value: InstructionValue<'ctx>) -> Result<Self, Self::Error> {
         if value.get_type().is_float_type() {
             unsafe { Ok(FloatValue::new(value.as_value_ref())) }
         } else {

@@ -1998,7 +1998,7 @@ impl<'ctx> Builder<'ctx> {
             )
         };
 
-        unsafe { Ok(<<T::BaseType as FloatMathType>::MathConvType as IntMathType>::ValueType::new(value)) }
+        unsafe { Ok(<<T::BaseType as FloatMathType<'ctx>>::MathConvType as IntMathType<'ctx>>::ValueType::new(value)) }
     }
 
     pub fn build_float_to_signed_int<T: FloatMathValue<'ctx>>(
@@ -2021,7 +2021,7 @@ impl<'ctx> Builder<'ctx> {
             )
         };
 
-        unsafe { Ok(<<T::BaseType as FloatMathType>::MathConvType as IntMathType>::ValueType::new(value)) }
+        unsafe { Ok(<<T::BaseType as FloatMathType<'ctx>>::MathConvType as IntMathType<'ctx>>::ValueType::new(value)) }
     }
 
     // REVIEW: Consolidate these two casts into one via subtypes
@@ -2045,7 +2045,7 @@ impl<'ctx> Builder<'ctx> {
             )
         };
 
-        unsafe { Ok(<<T::BaseType as IntMathType>::MathConvType as FloatMathType>::ValueType::new(value)) }
+        unsafe { Ok(<<T::BaseType as IntMathType<'ctx>>::MathConvType as FloatMathType<'ctx>>::ValueType::new(value)) }
     }
 
     pub fn build_signed_int_to_float<T: IntMathValue<'ctx>>(
@@ -2068,7 +2068,7 @@ impl<'ctx> Builder<'ctx> {
             )
         };
 
-        unsafe { Ok(<<T::BaseType as IntMathType>::MathConvType as FloatMathType>::ValueType::new(value)) }
+        unsafe { Ok(<<T::BaseType as IntMathType<'ctx>>::MathConvType as FloatMathType<'ctx>>::ValueType::new(value)) }
     }
 
     pub fn build_float_trunc<T: FloatMathValue<'ctx>>(
@@ -2596,7 +2596,7 @@ impl<'ctx> Builder<'ctx> {
             )
         };
 
-        unsafe { Ok(<<T::BaseType as FloatMathType>::MathConvType as IntMathType>::ValueType::new(value)) }
+        unsafe { Ok(<<T::BaseType as FloatMathType<'ctx>>::MathConvType as IntMathType<'ctx>>::ValueType::new(value)) }
     }
 
     pub fn build_unconditional_branch(
@@ -3047,7 +3047,7 @@ impl<'ctx> Builder<'ctx> {
         let c_string = to_c_str(name);
         let val = unsafe { LLVMBuildIsNull(self.builder, ptr.as_value_ref(), c_string.as_ptr()) };
 
-        unsafe { Ok(<<T::BaseType as PointerMathType>::PtrConvType as IntMathType>::ValueType::new(val)) }
+        unsafe { Ok(<<T::BaseType as PointerMathType<'ctx>>::PtrConvType as IntMathType<'ctx>>::ValueType::new(val)) }
     }
 
     // SubType: <P>(&self, ptr: &PointerValue<P>, name) -> IntValue<bool> {
@@ -3063,7 +3063,7 @@ impl<'ctx> Builder<'ctx> {
         let c_string = to_c_str(name);
         let val = unsafe { LLVMBuildIsNotNull(self.builder, ptr.as_value_ref(), c_string.as_ptr()) };
 
-        unsafe { Ok(<<T::BaseType as PointerMathType>::PtrConvType as IntMathType>::ValueType::new(val)) }
+        unsafe { Ok(<<T::BaseType as PointerMathType<'ctx>>::PtrConvType as IntMathType<'ctx>>::ValueType::new(val)) }
     }
 
     // SubType: <I, P>(&self, int: &IntValue<I>, ptr_type: &PointerType<P>, name) -> PointerValue<P> {
@@ -3088,7 +3088,7 @@ impl<'ctx> Builder<'ctx> {
             )
         };
 
-        unsafe { Ok(<<T::BaseType as IntMathType>::PtrConvType as PointerMathType>::ValueType::new(value)) }
+        unsafe { Ok(<<T::BaseType as IntMathType<'ctx>>::PtrConvType as PointerMathType<'ctx>>::ValueType::new(value)) }
     }
 
     // SubType: <I, P>(&self, ptr: &PointerValue<P>, int_type: &IntType<I>, name) -> IntValue<I> {
@@ -3113,7 +3113,7 @@ impl<'ctx> Builder<'ctx> {
             )
         };
 
-        unsafe { Ok(<<T::BaseType as PointerMathType>::PtrConvType as IntMathType>::ValueType::new(value)) }
+        unsafe { Ok(<<T::BaseType as PointerMathType<'ctx>>::PtrConvType as IntMathType<'ctx>>::ValueType::new(value)) }
     }
 
     pub fn clear_insertion_position(&self) {

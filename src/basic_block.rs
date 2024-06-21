@@ -592,7 +592,7 @@ impl<'ctx> BasicBlock<'ctx> {
 }
 
 impl fmt::Debug for BasicBlock<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let llvm_value = unsafe { CStr::from_ptr(LLVMPrintValueToString(self.basic_block as LLVMValueRef)) };
         let llvm_type = unsafe { CStr::from_ptr(LLVMPrintTypeToString(LLVMTypeOf(self.basic_block as LLVMValueRef))) };
         let is_const = unsafe { LLVMIsConstant(self.basic_block as LLVMValueRef) == 1 };

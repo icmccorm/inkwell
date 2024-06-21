@@ -173,7 +173,7 @@ pub trait AsDIScope<'ctx> {
 
 impl<'ctx> DebugInfoBuilder<'ctx> {
     pub(crate) fn new(
-        module: &Module,
+        module: &Module<'ctx>,
         allow_unresolved: bool,
         language: DWARFSourceLanguage,
         filename: &str,
@@ -801,8 +801,8 @@ impl<'ctx> DebugInfoBuilder<'ctx> {
         line_no: u32,
         ty: DIType<'ctx>,
         local_to_unit: bool,
-        expression: Option<DIExpression>,
-        declaration: Option<DIScope>,
+        expression: Option<DIExpression<'ctx>>,
+        declaration: Option<DIScope<'ctx>>,
         align_in_bits: u32,
     ) -> DIGlobalVariableExpression<'ctx> {
         let expression_ptr = expression.map_or(std::ptr::null_mut(), |dt| dt.metadata_ref);

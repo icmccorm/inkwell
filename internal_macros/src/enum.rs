@@ -115,7 +115,7 @@ pub struct LLVMEnumType {
 }
 
 impl Parse for LLVMEnumType {
-    fn parse(input: ParseStream) -> Result<Self> {
+    fn parse(input: ParseStream<'_>) -> Result<Self> {
         // Parse enum declaration
         let decl = input.parse::<syn::ItemEnum>()?;
         let name = decl.ident.clone();

@@ -158,13 +158,13 @@ impl PartialEq for TargetTriple {
 }
 
 impl fmt::Debug for TargetTriple {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "TargetTriple({:?})", self.triple)
     }
 }
 
 impl fmt::Display for TargetTriple {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         write!(f, "TargetTriple({:?})", self.triple)
     }
 }
@@ -1055,7 +1055,7 @@ pub struct TargetMachine {
     pub(crate) target_machine: LLVMTargetMachineRef,
 }
 
-impl TargetMachine {
+impl<'ctx> TargetMachine {
     pub unsafe fn new(target_machine: LLVMTargetMachineRef) -> Self {
         assert!(!target_machine.is_null());
 
@@ -1183,7 +1183,7 @@ impl TargetMachine {
     ///
     /// let buffer = target_machine.write_to_memory_buffer(&module, FileType::Assembly).unwrap();
     /// ```
-    pub fn write_to_memory_buffer(&self, module: &Module, file_type: FileType) -> Result<MemoryBuffer, LLVMString> {
+    pub fn write_to_memory_buffer(&self, module: &Module<'ctx>, file_type: FileType) -> Result<MemoryBuffer, LLVMString> {
         let mut memory_buffer = ptr::null_mut();
         let mut err_string = MaybeUninit::uninit();
         let return_code = unsafe {
@@ -1245,7 +1245,7 @@ impl TargetMachine {
     ///
     /// assert!(target_machine.write_to_file(&module, FileType::Object, &path).is_ok());
     /// ```
-    pub fn write_to_file(&self, module: &Module, file_type: FileType, path: &Path) -> Result<(), LLVMString> {
+    pub fn write_to_file(&self, module: &Module<'ctx>, file_type: FileType, path: &Path) -> Result<(), LLVMString> {
         let path = path.to_str().expect("Did not find a valid Unicode path string");
         let path_c_string = to_c_str(path);
         let mut err_string = MaybeUninit::uninit();
@@ -1291,7 +1291,7 @@ pub struct TargetData {
     pub(crate) target_data: LLVMTargetDataRef,
 }
 
-impl TargetData {
+impl<'ctx> TargetData {
     pub unsafe fn new(target_data: LLVMTargetDataRef) -> TargetData {
         assert!(!target_data.is_null());
 
@@ -1321,7 +1321,7 @@ impl TargetData {
     /// let int_type = target_data.ptr_sized_int_type_in_context(&context, None);
     /// ```
     #[deprecated(note = "This method will be removed in the future. Please use Context::ptr_sized_int_type instead.")]
-    pub fn ptr_sized_int_type_in_context<'ctx>(
+    pub fn ptr_sized_int_type_in_context(
         &self,
         context: impl AsContextRef<'ctx>,
         address_space: Option<AddressSpace>,
@@ -1341,7 +1341,7 @@ impl TargetData {
     }
 
     // REVIEW: Does this only work if Sized?
-    pub fn get_bit_size(&self, type_: &dyn AnyType) -> u64 {
+    pub fn get_bit_size(&self, type_: &dyn AnyType<'ctx>) -> u64 {
         unsafe { LLVMSizeOfTypeInBits(self.target_data, type_.as_type_ref()) }
     }
 
@@ -1368,35 +1368,35 @@ impl TargetData {
         }
     }
 
-    pub fn get_store_size(&self, type_: &dyn AnyType) -> u64 {
+    pub fn get_store_size(&self, type_: &dyn AnyType<'ctx>) -> u64 {
         unsafe { LLVMStoreSizeOfType(self.target_data, type_.as_type_ref()) }
     }
 
-    pub fn get_abi_size(&self, type_: &dyn AnyType) -> u64 {
+    pub fn get_abi_size(&self, type_: &dyn AnyType<'ctx>) -> u64 {
         unsafe { LLVMABISizeOfType(self.target_data, type_.as_type_ref()) }
     }
 
-    pub fn get_abi_alignment(&self, type_: &dyn AnyType) -> u32 {
+    pub fn get_abi_alignment(&self, type_: &dyn AnyType<'ctx>) -> u32 {
         unsafe { LLVMABIAlignmentOfType(self.target_data, type_.as_type_ref()) }
     }
 
-    pub fn get_call_frame_alignment(&self, type_: &dyn AnyType) -> u32 {
+    pub fn get_call_frame_alignment(&self, type_: &dyn AnyType<'ctx>) -> u32 {
         unsafe { LLVMCallFrameAlignmentOfType(self.target_data, type_.as_type_ref()) }
     }
 
-    pub fn get_preferred_alignment(&self, type_: &dyn AnyType) -> u32 {
+    pub fn get_preferred_alignment(&self, type_: &dyn AnyType<'ctx>) -> u32 {
         unsafe { LLVMPreferredAlignmentOfType(self.target_data, type_.as_type_ref()) }
     }
 
-    pub fn get_preferred_alignment_of_global(&self, value: &GlobalValue) -> u32 {
+    pub fn get_preferred_alignment_of_global(&self, value: &GlobalValue<'ctx>) -> u32 {
         unsafe { LLVMPreferredAlignmentOfGlobal(self.target_data, value.as_value_ref()) }
     }
 
-    pub fn element_at_offset(&self, struct_type: &StructType, offset: u64) -> u32 {
+    pub fn element_at_offset(&self, struct_type: &StructType<'ctx>, offset: u64) -> u32 {
         unsafe { LLVMElementAtOffset(self.target_data, struct_type.as_type_ref(), offset) }
     }
 
-    pub fn offset_of_element(&self, struct_type: &StructType, element: u32) -> Option<u64> {
+    pub fn offset_of_element(&self, struct_type: &StructType<'ctx>, element: u32) -> Option<u64> {
         if element > struct_type.count_fields() - 1 {
             return None;
         }

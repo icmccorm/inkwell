@@ -148,7 +148,7 @@ impl Display for MetadataValue<'_> {
 }
 
 impl fmt::Debug for MetadataValue<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut d = f.debug_struct("MetadataValue");
         d.field("address", &self.as_value_ref());
 

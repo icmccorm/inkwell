@@ -36,7 +36,7 @@ macro_rules! enum_value_set {
 
         $(
             impl<'ctx> From<$args<'ctx>> for $enum_name<'ctx> {
-                fn from(value: $args) -> $enum_name {
+                fn from(value: $args<'ctx>) -> $enum_name<'ctx> {
                     $enum_name::$args(value)
                 }
             }

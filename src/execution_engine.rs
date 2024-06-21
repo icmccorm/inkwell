@@ -5,15 +5,29 @@ use llvm_sys::execution_engine::{
     LLVMLinkInInterpreter, LLVMLinkInMCJIT, LLVMRemoveModule, LLVMRunFunction, LLVMRunFunctionAsMain,
     LLVMRunStaticConstructors, LLVMRunStaticDestructors,
 };
+use llvm_sys::execution_engine::{
+    LLVMExecutionEngineCreateThread,
+    LLVMExecutionEngineGetConstructorAtIndex, LLVMExecutionEngineGetConstructorCount,
+    LLVMExecutionEngineGetDestructorAtIndex, LLVMExecutionEngineGetDestructorCount,
+    LLVMExecutionEngineGetThreadExitValue, LLVMExecutionEngineHasThread,
+    LLVMExecutionEngineSetMiriCallByNameHook, LLVMExecutionEngineSetMiriCallByPointerHook,
+    LLVMExecutionEngineSetMiriFree, LLVMExecutionEngineSetMiriGetElementPointerHook,
+    LLVMExecutionEngineSetMiriIntToPtr, LLVMExecutionEngineSetMiriInterpCxWrapper, LLVMExecutionEngineSetMiriLoadHook,
+    LLVMExecutionEngineSetMiriMalloc, LLVMExecutionEngineSetMiriMemcpy, LLVMExecutionEngineSetMiriMemset,
+    LLVMExecutionEngineSetMiriPtrToInt, LLVMExecutionEngineSetMiriRegisterGlobalHook,
+    LLVMExecutionEngineSetMiriStackTraceRecorderHook, LLVMExecutionEngineSetMiriStoreHook,
+    LLVMExecutionEngineStepThread, LLVMExecutionEngineTerminateThread
+};
+pub use llvm_sys::miri::*;
 
 use crate::context::Context;
 use crate::module::Module;
 use crate::support::{to_c_str, LLVMString};
 use crate::targets::TargetData;
-use crate::values::{AnyValue, AsValueRef, FunctionValue, GenericValue};
+use crate::values::{AnyValue, AsValueRef, FunctionValue, GenericValue, GenericValueRef};
 
 use std::error::Error;
-use std::fmt::{self, Debug, Display, Formatter};
+use std::fmt::{self, Debug, Display};
 use std::marker::PhantomData;
 use std::mem::{forget, size_of, transmute_copy, MaybeUninit};
 use std::ops::Deref;
@@ -39,7 +53,7 @@ impl FunctionLookupError {
 }
 
 impl Display for FunctionLookupError {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "FunctionLookupError({})", self.as_str())
     }
 }
@@ -74,7 +88,7 @@ impl RemoveModuleError {
 }
 
 impl Display for RemoveModuleError {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "RemoveModuleError({})", self.as_str())
     }
 }
@@ -387,7 +401,7 @@ impl<'ctx> ExecutionEngine<'ctx> {
         function: FunctionValue<'ctx>,
         args: &[&GenericValue<'ctx>],
     ) -> GenericValue<'ctx> {
-        let mut args: Vec<LLVMGenericValueRef> = args.iter().map(|val| val.generic_value).collect();
+        let mut args: Vec<LLVMGenericValueRef> = args.iter().map(|val| val.generic_value_ref.generic_value).collect();
 
         let value = LLVMRunFunction(
             self.execution_engine_inner(),
@@ -429,6 +443,129 @@ impl<'ctx> ExecutionEngine<'ctx> {
     // REVIEW: Is this actually safe? Can you double destruct/free?
     pub fn run_static_destructors(&self) {
         unsafe { LLVMRunStaticDestructors(self.execution_engine_inner()) }
+    }
+
+    pub unsafe fn get_constructors(&self) -> Vec<FunctionValue<'ctx>> {
+        let count = unsafe { LLVMExecutionEngineGetConstructorCount(self.execution_engine_inner()) };
+        let mut constructors = Vec::with_capacity(count.try_into().unwrap());
+        for i in 0..count {
+            let value = unsafe {
+                FunctionValue::new(LLVMExecutionEngineGetConstructorAtIndex(
+                    self.execution_engine_inner(),
+                    i,
+                ))
+                .unwrap()
+            };
+            constructors.push(value);
+        }
+        constructors
+    }
+
+    pub unsafe fn get_destructors(&self) -> Vec<FunctionValue<'ctx>> {
+        let count = unsafe { LLVMExecutionEngineGetDestructorCount(self.execution_engine_inner()) };
+        let mut destructors = Vec::with_capacity(count.try_into().unwrap());
+        for i in 0..count {
+            let value = unsafe {
+                FunctionValue::new(LLVMExecutionEngineGetDestructorAtIndex(
+                    self.execution_engine_inner(),
+                    i,
+                ))
+                .unwrap()
+            };
+            destructors.push(value);
+        }
+        destructors
+    }
+
+    pub unsafe fn create_thread(&self, thread_id: u64, function: FunctionValue<'ctx>, args: &[GenericValue<'ctx>]) {
+        let mut args: Vec<LLVMGenericValueRef> = args.iter().map(|val| val.as_ref().generic_value).collect();
+        LLVMExecutionEngineCreateThread(
+            self.execution_engine_inner(),
+            thread_id,
+            function.as_value_ref(),
+            args.len() as u32,
+            args.as_mut_ptr(),
+        );
+    }
+
+    pub unsafe fn step_thread(&self, thread_id: u64, pending_return: Option<GenericValueRef<'static>>) -> bool {
+        let return_ptr = match pending_return {
+            Some(ref val) => val.generic_value,
+            None => std::ptr::null_mut(),
+        };
+        LLVMExecutionEngineStepThread(self.execution_engine_inner(), thread_id, return_ptr) != 0
+    }
+
+    pub unsafe fn get_thread_exit_value(&self, thread_id: u64) -> Option<GenericValueRef<'static>> {
+        let value = LLVMExecutionEngineGetThreadExitValue(self.execution_engine_inner(), thread_id);
+        if value.is_null() {
+            None
+        } else {
+            Some(GenericValueRef::new(value))
+        }
+    }
+
+    pub unsafe fn terminate_thread(&self, thread_id: u64) {
+        LLVMExecutionEngineTerminateThread(self.execution_engine_inner(), thread_id);
+    }
+
+    pub unsafe fn has_thread(&self, thread_id: u64) -> bool {
+        LLVMExecutionEngineHasThread(self.execution_engine_inner(), thread_id) != 0
+    }
+
+    pub fn set_miri_interpcx_wrapper(&self, wrapper: *mut MiriInterpCxOpaque) {
+        unsafe { LLVMExecutionEngineSetMiriInterpCxWrapper(self.execution_engine_inner(), wrapper) }
+    }
+
+    pub fn set_miri_load(&self, load_hook: MiriLoadStoreHook) {
+        unsafe { LLVMExecutionEngineSetMiriLoadHook(self.execution_engine_inner(), load_hook) }
+    }
+    pub fn set_miri_get_element_pointer(&self, gep_hook: MiriGetElementPointerHook) {
+        unsafe { LLVMExecutionEngineSetMiriGetElementPointerHook(self.execution_engine_inner(), gep_hook) }
+    }
+
+    pub fn set_miri_store(&self, store_hook: MiriLoadStoreHook) {
+        unsafe { LLVMExecutionEngineSetMiriStoreHook(self.execution_engine_inner(), store_hook) }
+    }
+
+    pub fn set_miri_malloc(&self, malloc_hook: MiriAllocationHook) {
+        unsafe { LLVMExecutionEngineSetMiriMalloc(self.execution_engine_inner(), malloc_hook) }
+    }
+
+    pub fn set_miri_free(&self, free_hook: MiriFreeHook) {
+        unsafe { LLVMExecutionEngineSetMiriFree(self.execution_engine_inner(), free_hook) }
+    }
+
+    pub fn set_miri_call_by_name(&self, callback_hook: MiriCallByNameHook) {
+        unsafe { LLVMExecutionEngineSetMiriCallByNameHook(self.execution_engine_inner(), callback_hook) }
+    }
+
+    pub fn set_miri_call_by_pointer(&self, callback_hook: MiriCallByPointerHook) {
+        unsafe { LLVMExecutionEngineSetMiriCallByPointerHook(self.execution_engine_inner(), callback_hook) }
+    }
+
+    pub fn set_miri_stack_trace_recorder(&self, stack_hook: MiriStackTraceRecorderHook) {
+        unsafe { LLVMExecutionEngineSetMiriStackTraceRecorderHook(self.execution_engine_inner(), stack_hook) }
+    }
+
+    pub fn set_miri_memset(&self, memset: MiriMemset) {
+        unsafe { LLVMExecutionEngineSetMiriMemset(self.execution_engine_inner(), memset) }
+    }
+
+    pub fn set_miri_memcpy(&self, memcpy: MiriMemcpy) {
+        unsafe { LLVMExecutionEngineSetMiriMemcpy(self.execution_engine_inner(), memcpy) }
+    }
+
+    pub fn set_miri_inttoptr(&self, mitp: MiriIntToPtr) {
+        unsafe { LLVMExecutionEngineSetMiriIntToPtr(self.execution_engine_inner(), mitp) }
+    }
+
+    pub fn set_miri_ptrtoint(&self, mpti: MiriPtrToInt) {
+        unsafe { LLVMExecutionEngineSetMiriPtrToInt(self.execution_engine_inner(), mpti) }
+    }
+
+    pub fn set_miri_register_global(&self, register_global: MiriRegisterGlobalHook) {
+        unsafe { LLVMExecutionEngineSetMiriRegisterGlobalHook(self.execution_engine_inner(), register_global) }
     }
 }
 
@@ -506,7 +643,7 @@ impl<'ctx, F: Copy> JitFunction<'ctx, F> {
 }
 
 impl<F> Debug for JitFunction<'_, F> {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_tuple("JitFunction").field(&"<unnamed>").finish()
     }
 }

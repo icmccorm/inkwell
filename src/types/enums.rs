@@ -34,7 +34,7 @@ macro_rules! enum_type_set {
 
         $(
             impl<'ctx> From<$args<'ctx>> for $enum_name<'ctx> {
-                fn from(value: $args) -> $enum_name {
+                fn from(value: $args<'ctx>) -> $enum_name<'ctx> {
                     $enum_name::$args(value)
                 }
             }
@@ -560,6 +560,10 @@ impl<'ctx> BasicTypeEnum<'ctx> {
             BasicTypeEnum::StructType(t) => t.print_to_string(),
             BasicTypeEnum::VectorType(t) => t.print_to_string(),
         }
+    }
+    
+    pub fn get_llvm_type_kind(&self) -> LLVMTypeKind {
+        unsafe { LLVMGetTypeKind(self.as_type_ref()) }
     }
 }
 

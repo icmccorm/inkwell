@@ -543,7 +543,7 @@ impl Display for FunctionValue<'_> {
 }
 
 impl fmt::Debug for FunctionValue<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let llvm_value = self.print_to_string();
         let llvm_type = self.get_type();
         let name = self.get_name();

@@ -347,6 +347,21 @@ impl<'ctx> IntType<'ctx> {
         unsafe { LLVMGetIntTypeWidth(self.as_type_ref()) }
     }
 
+    /// Gets the byte width of an `IntType`.
+    ///
+    /// # Example
+    /// ```no_run
+    /// use inkwell::context::Context;
+    ///
+    /// let context = Context::create();
+    /// let bool_type = context.bool_type();
+    ///
+    /// assert_eq!(bool_type.get_byte_width(), 1);
+    /// ```
+    pub fn get_byte_width(self) -> u32 {
+        (self.get_bit_width() + 7) / 8
+    }
+
     /// Print the definition of an `IntType` to `LLVMString`.
     pub fn print_to_string(self) -> LLVMString {
         self.int_type.print_to_string()

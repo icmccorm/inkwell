@@ -137,7 +137,7 @@ impl Display for PhiValue<'_> {
 impl<'ctx> TryFrom<InstructionValue<'ctx>> for PhiValue<'ctx> {
     type Error = ();
 
-    fn try_from(value: InstructionValue) -> Result<Self, Self::Error> {
+    fn try_from(value: InstructionValue<'_>) -> Result<Self, Self::Error> {
         if value.get_opcode() == InstructionOpcode::Phi {
             unsafe { Ok(PhiValue::new(value.as_value_ref())) }
         } else {

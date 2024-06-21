@@ -87,7 +87,7 @@ impl Intrinsic {
     pub fn get_declaration<'ctx>(
         &self,
         module: &Module<'ctx>,
-        param_types: &[BasicTypeEnum],
+        param_types: &[BasicTypeEnum<'ctx>],
     ) -> Option<FunctionValue<'ctx>> {
         let mut param_types: Vec<LLVMTypeRef> = param_types.iter().map(|val| val.as_type_ref()).collect();
 

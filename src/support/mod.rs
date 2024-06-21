@@ -11,7 +11,7 @@ use llvm_sys::support::{LLVMLoadLibraryPermanently, LLVMSearchForAddressOfSymbol
 use std::borrow::Cow;
 use std::error::Error;
 use std::ffi::{CStr, CString};
-use std::fmt::{self, Debug, Display, Formatter};
+use std::fmt::{self, Debug, Display};
 use std::ops::Deref;
 use std::path::Path;
 
@@ -58,13 +58,13 @@ impl Deref for LLVMString {
 }
 
 impl Debug for LLVMString {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), fmt::Error> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         write!(f, "{:?}", self.deref())
     }
 }
 
 impl Display for LLVMString {
-    fn fmt(&self, f: &mut Formatter) -> Result<(), fmt::Error> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         write!(f, "{:?}", self.deref())
     }
 }

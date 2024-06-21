@@ -105,7 +105,7 @@ pub unsafe trait BasicValue<'ctx>: AnyValue<'ctx> {
         unsafe { Some(InstructionValue::new(self.as_value_ref())) }
     }
 
-    fn get_first_use(&self) -> Option<BasicValueUse> {
+    fn get_first_use(&self) -> Option<BasicValueUse<'_>> {
         unsafe { Value::new(self.as_value_ref()).get_first_use() }
     }
 

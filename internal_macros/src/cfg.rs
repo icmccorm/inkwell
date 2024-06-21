@@ -21,7 +21,7 @@ pub struct VersionRange {
 }
 
 impl Parse for VersionRange {
-    fn parse(input: ParseStream) -> Result<Self> {
+    fn parse(input: ParseStream<'_>) -> Result<Self> {
         let start = if input.peek(Token![..]) || input.peek(Token![..=]) {
             None
         } else {
@@ -112,7 +112,7 @@ struct Version {
 }
 
 impl Parse for Version {
-    fn parse(input: ParseStream) -> Result<Self> {
+    fn parse(input: ParseStream<'_>) -> Result<Self> {
         let lit = input.parse::<Lit>()?;
         let (major, minor) = match &lit {
             Lit::Int(int) => (int.base10_parse()?, 0),

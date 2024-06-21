@@ -186,7 +186,7 @@ impl Display for PointerValue<'_> {
 impl<'ctx> TryFrom<InstructionValue<'ctx>> for PointerValue<'ctx> {
     type Error = ();
 
-    fn try_from(value: InstructionValue) -> Result<Self, Self::Error> {
+    fn try_from(value: InstructionValue<'_>) -> Result<Self, Self::Error> {
         if value.get_type().is_pointer_type() {
             unsafe { Ok(PointerValue::new(value.as_value_ref())) }
         } else {

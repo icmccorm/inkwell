@@ -44,6 +44,9 @@ pub use crate::values::enums::{AggregateValueEnum, AnyValueEnum, BasicMetadataVa
 pub use crate::values::float_value::FloatValue;
 pub use crate::values::fn_value::FunctionValue;
 pub use crate::values::generic_value::GenericValue;
+pub use crate::values::generic_value::GenericValueArrayRef;
+pub use crate::values::generic_value::GenericValueRef;
+
 pub use crate::values::global_value::GlobalValue;
 #[llvm_versions(7..)]
 pub use crate::values::global_value::UnnamedAddress;
@@ -240,7 +243,7 @@ impl<'ctx> Value<'ctx> {
 }
 
 impl fmt::Debug for Value<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let llvm_value = self.print_to_string();
         let llvm_type = unsafe { CStr::from_ptr(LLVMPrintTypeToString(LLVMTypeOf(self.value))) };
         let name = self.get_name();

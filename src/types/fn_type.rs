@@ -220,7 +220,7 @@ impl<'ctx> FunctionType<'ctx> {
 }
 
 impl fmt::Debug for FunctionType<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let llvm_type = self.print_to_string();
 
         f.debug_struct("FunctionType")

@@ -264,7 +264,7 @@ impl<'ctx> IntValue<'ctx> {
         unsafe { IntValue::new(LLVMConstZExtOrBitCast(self.as_value_ref(), int_type.as_type_ref())) }
     }
 
-    pub fn const_bit_cast(self, int_type: IntType) -> IntValue<'ctx> {
+    pub fn const_bit_cast(self, int_type: IntType<'ctx>) -> IntValue<'ctx> {
         unsafe { IntValue::new(LLVMConstBitCast(self.as_value_ref(), int_type.as_type_ref())) }
     }
 
@@ -394,7 +394,7 @@ impl Display for IntValue<'_> {
 impl<'ctx> TryFrom<InstructionValue<'ctx>> for IntValue<'ctx> {
     type Error = ();
 
-    fn try_from(value: InstructionValue) -> Result<Self, Self::Error> {
+    fn try_from(value: InstructionValue<'_>) -> Result<Self, Self::Error> {
         if value.get_type().is_int_type() {
             unsafe { Ok(IntValue::new(value.as_value_ref())) }
         } else {
